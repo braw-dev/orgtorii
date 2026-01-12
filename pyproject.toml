@@ -75,7 +75,7 @@ django_settings_module = "orgtorii.settings"
 
 [project]
 name = "project_name"
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 version = "0.1.0"
 dependencies = [
     "django-allauth[mfa,socialaccount]",
