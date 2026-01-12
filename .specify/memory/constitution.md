@@ -41,6 +41,12 @@ Complexity is the enemy. We prioritize simple code that works over clever abstra
 
 We protect user data and anonymity. While data is open, personal identifiers of anonymous users are sacred. Verification processes must be secure and privacy-preserving.
 
+## Design Language
+
+### Editorial Academicism
+
+We adopt an "Editorial Academicism" aesthetic. The design should feel scholarly, trustworthy, and authoritative—like a high-end journal or a modernized Wikipedia. We reject "tech blue" SaaS tropes in favor of creamy off-white backgrounds, serif typography, and earthy palettes. This visual language reinforces our commitment to truth and open knowledge.
+
 ## Governance
 
 ### Amendment Process
