@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block head_title %}
+    {% if object %}
+        {% translate "Edit Company" %} - {{ object.name }}
+    {% else %}
+        {% translate "Add New Company" %}
+    {% endif %}
+{% endblock head_title %}
+{% block body %}
+    <div class="container mx-auto px-4 py-8 max-w-3xl">
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h1 class="card-title text-3xl mb-4">
+                    {% if object %}
+                        {% translate "Edit Company" %}
+                    {% else %}
+                        {% translate "Add New Company" %}
+                    {% endif %}
+                </h1>
+                <form method="post" class="space-y-4">
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}<div class="alert alert-error">{{ form.non_field_errors }}</div>{% endif %}
+                    <div class="form-control">
+                        <label class="label" for="{{ form.name.id_for_label }}">
+                            <span class="label-text font-semibold">{{ form.name.label }} *</span>
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.help_text %}
+                            <label class="label">
+                                <span class="label-text-alt">{{ form.name.help_text }}</span>
+                            </label>
+                        {% endif %}
+                        {% if form.name.errors %}
+                            <label class="label">
+                                <span class="label-text-alt text-error">{{ form.name.errors.0 }}</span>
+                            </label>
+                        {% endif %}
+                    </div>
+                    <div class="form-control">
+                        <label class="label" for="{{ form.industry.id_for_label }}">
+                            <span class="label-text font-semibold">{{ form.industry.label }}</span>
+                        </label>
+                        {{ form.industry }}
+                        {% if form.industry.help_text %}
+                            <label class="label">
+                                <span class="label-text-alt">{{ form.industry.help_text }}</span>
+                            </label>
+                        {% endif %}
+                        {% if form.industry.errors %}
+                            <label class="label">
+                                <span class="label-text-alt text-error">{{ form.industry.errors.0 }}</span>
+                            </label>
+                        {% endif %}
+                    </div>
+                    <div class="form-control">
+                        <label class="label" for="{{ form.hq_location.id_for_label }}">
+                            <span class="label-text font-semibold">{{ form.hq_location.label }}</span>
+                        </label>
+                        {{ form.hq_location }}
+                        {% if form.hq_location.help_text %}
+                            <label class="label">
+                                <span class="label-text-alt">{{ form.hq_location.help_text }}</span>
+                            </label>
+                        {% endif %}
+                        {% if form.hq_location.errors %}
+                            <label class="label">
+                                <span class="label-text-alt text-error">{{ form.hq_location.errors.0 }}</span>
+                            </label>
+                        {% endif %}
+                    </div>
+                    <div class="form-control">
+                        <label class="label" for="{{ form.description.id_for_label }}">
+                            <span class="label-text font-semibold">{{ form.description.label }}</span>
+                        </label>
+                        {{ form.description }}
+                        {% if form.description.help_text %}
+                            <label class="label">
+                                <span class="label-text-alt">{{ form.description.help_text }}</span>
+                            </label>
+                        {% endif %}
+                        {% if form.description.errors %}
+                            <label class="label">
+                                <span class="label-text-alt text-error">{{ form.description.errors.0 }}</span>
+                            </label>
+                        {% endif %}
+                    </div>
+                    {% if website_formset %}
+                        <div class="divider">{% translate "Websites" %}</div>
+                        {{ website_formset.management_form }}
+                        <div id="website-formset" class="space-y-3">
+                            {% for form in website_formset %}
+                                <div class="website-form p-4 border border-base-300 rounded-lg">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div class="form-control">
+                                            <label class="label">
+                                                <span class="label-text">{{ form.url.label }}</span>
+                                            </label>
+                                            {{ form.url }}
+                                            {% if form.url.errors %}
+                                                <label class="label">
+                                                    <span class="label-text-alt text-error">{{ form.url.errors.0 }}</span>
+                                                </label>
+                                            {% endif %}
+                                        </div>
+                                        <div class="form-control">
+                                            <label class="label">
+                                                <span class="label-text">{{ form.label.label }}</span>
+                                            </label>
+                                            {{ form.label }}
+                                            {% if form.label.errors %}
+                                                <label class="label">
+                                                    <span class="label-text-alt text-error">{{ form.label.errors.0 }}</span>
+                                                </label>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% if form.instance.pk %}
+                                        <div class="form-control mt-2">
+                                            <label class="label cursor-pointer justify-start gap-2">
+                                                {{ form.DELETE }}
+                                                <span class="label-text">{% translate "Delete this website" %}</span>
+                                            </label>
+                                        </div>
+                                    {% endif %}
+                                    {{ form.id }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <div class="card-actions justify-end mt-6">
+                        <a href="{% if object %}{% url 'companies:detail' object.slug %}{% else %}{% url 'companies:list' %}{% endif %}"
+                           class="btn btn-ghost">{% translate "Cancel" %}</a>
+                        <button type="submit" class="btn btn-primary">
+                            {% if object %}
+                                {% translate "Update Company" %}
+                            {% else %}
+                                {% translate "Create Company" %}
+                            {% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock body %}

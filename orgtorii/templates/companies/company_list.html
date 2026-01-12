@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block head_title %}
+    {% translate "Companies Directory" %}
+{% endblock head_title %}
+{% block body %}
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold mb-2">{% translate "Companies Directory" %}</h1>
+                <p class="text-base-content/70">{% translate "Browse and contribute to our open company database" %}</p>
+            </div>
+            {% if user.is_authenticated %}
+                <a href="{% url 'companies:create' %}"
+                   class="btn btn-primary mt-4 md:mt-0">{% translate "Add Company" %}</a>
+            {% endif %}
+        </div>
+        <div class="card bg-base-100 shadow-xl mb-6">
+            <div class="card-body">
+                <form method="get" class="flex gap-2">
+                    <input type="search"
+                           name="q"
+                           value="{{ search_query }}"
+                           placeholder="{% translate "Search companies..." %}"
+                           class="input input-bordered flex-grow" />
+                    <button type="submit" class="btn btn-primary">{% translate "Search" %}</button>
+                    {% if search_query %}
+                        <a href="{% url 'companies:list' %}" class="btn btn-ghost">{% translate "Clear" %}</a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+        {% if companies %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for company in companies %}
+                    <a href="{% url 'companies:detail' company.slug %}"
+                       class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+                        <div class="card-body">
+                            <h2 class="card-title">
+                                {{ company.name }}
+                                {% if company.is_stub %}
+                                    <div class="badge badge-warning badge-sm">{% translate "Stub" %}</div>
+                                {% endif %}
+                            </h2>
+                            {% if company.industry %}<p class="text-sm text-base-content/60">{{ company.industry.name }}</p>{% endif %}
+                            {% if company.hq_location %}
+                                <p class="text-sm text-base-content/70">
+                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                         class="h-4 w-4 inline"
+                                         fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    {{ company.hq_location }}
+                                </p>
+                            {% endif %}
+                            {% if company.description %}
+                                <p class="text-sm text-base-content/70 line-clamp-3 mt-2">{{ company.description|truncatewords:20 }}</p>
+                            {% else %}
+                                <p class="text-sm text-base-content/50 italic mt-2">{% translate "No description available" %}</p>
+                            {% endif %}
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+            {% if is_paginated %}
+                <div class="flex justify-center mt-8">
+                    <div class="btn-group">
+                        {% if page_obj.has_previous %}
+                            <a href="?page=1{% if search_query %}&q={{ search_query }}{% endif %}"
+                               class="btn btn-sm">«</a>
+                            <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}"
+                               class="btn btn-sm">‹</a>
+                        {% endif %}
+                        <button class="btn btn-sm btn-active">
+                            {% translate "Page" %} {{ page_obj.number }} {% translate "of" %} {{ page_obj.paginator.num_pages }}
+                        </button>
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}"
+                               class="btn btn-sm">›</a>
+                            <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}"
+                               class="btn btn-sm">»</a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="card bg-base-200">
+                <div class="card-body text-center">
+                    <p class="text-lg">
+                        {% if search_query %}
+                            {% translate "No companies found matching your search." %}
+                        {% else %}
+                            {% translate "No companies in the directory yet." %}
+                        {% endif %}
+                    </p>
+                    {% if user.is_authenticated %}
+                        <div class="card-actions justify-center mt-4">
+                            <a href="{% url 'companies:create' %}" class="btn btn-primary">{% translate "Be the first to add one!" %}</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock body %}

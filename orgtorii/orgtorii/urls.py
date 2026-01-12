@@ -19,6 +19,7 @@ urlpatterns = (
         path("api/webhooks/", webhooks_api.urls),  # Webhook endpoints (CSRF exempt)
         path("admin/", admin.site.urls),  # Django admin
         path("accounts/", include("allauth.urls")),  # Django allauth
+        path("companies/", include("orgtorii.companies.urls")),  # Company directory
         path("pricing/", views.pricing, name="pricing"),  # Pricing page
         path("newsletter/", include((newsletter_urls, "newsletter"))),
         path(

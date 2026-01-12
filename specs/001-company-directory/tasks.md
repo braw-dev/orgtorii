@@ -7,63 +7,63 @@
 
 *Goal: Initialize the new app and infrastructure.*
 
-- [ ] T001 Create `companies` app using `python manage.py startapp companies`
-- [ ] T002 Register `orgtorii.companies` in `INSTALLED_APPS` in `orgtorii/orgtorii/settings.py`
-- [ ] T003 Create `orgtorii/companies/urls.py` with empty `urlpatterns`
-- [ ] T004 Include `companies.urls` in root `orgtorii/orgtorii/urls.py`
+- [x] T001 Create `companies` app using `python manage.py startapp companies`
+- [x] T002 Register `orgtorii.companies` in `INSTALLED_APPS` in `orgtorii/orgtorii/settings.py`
+- [x] T003 Create `orgtorii/companies/urls.py` with empty `urlpatterns`
+- [x] T004 Include `companies.urls` in root `orgtorii/orgtorii/urls.py`
 
 ## Phase 2: Foundational (Models)
 
 *Goal: Implement the data model to support all user stories.*
 
-- [ ] T005 [P] Implement `Industry` model with UUIDv7 in `orgtorii/companies/models.py`
-- [ ] T006 [P] Implement `Company` model with UUIDv7 and `is_stub` logic in `orgtorii/companies/models.py`
-- [ ] T007 [P] Implement `CompanyWebsite` model in `orgtorii/companies/models.py`
-- [ ] T008 [P] Implement `CompanyUser` model with roles (ADMIN, EDITOR, READ_ONLY) in `orgtorii/companies/models.py`
-- [ ] T009 [P] Implement `CompanyRevision` model with JSON snapshot field in `orgtorii/companies/models.py`
-- [ ] T010 Create and run migrations for `companies` app
+- [x] T005 [P] Implement `Industry` model with UUID in `orgtorii/companies/models.py`
+- [x] T006 [P] Implement `Company` model with UUID and `is_stub` logic in `orgtorii/companies/models.py`
+- [x] T007 [P] Implement `CompanyWebsite` model in `orgtorii/companies/models.py`
+- [x] T008 [P] Implement `CompanyUser` model with roles (ADMIN, EDITOR, READ_ONLY) in `orgtorii/companies/models.py`
+- [x] T009 [P] Implement `CompanyRevision` model with JSON snapshot field in `orgtorii/companies/models.py`
+- [x] T010 Create and run migrations for `companies` app
 
 ## Phase 3: User Story 1 - Create New Company Profile (P1)
 
 *Goal: Allow contributors to add new companies.*
 
-- [ ] T011 [US1] Implement `CompanyForm` in `orgtorii/companies/forms.py` (fields: name, industry, description, hq_location)
-- [ ] T012 [US1] Implement `CompanyCreateView` in `orgtorii/companies/views.py` with automatic slug generation
-- [ ] T013 [US1] Create template `orgtorii/templates/companies/company_form.html`
-- [ ] T014 [US1] Register `/companies/create/` in `orgtorii/companies/urls.py`
-- [ ] T015 [US1] Implement tests for company creation in `orgtorii/companies/tests/test_views.py`
+- [x] T011 [US1] Implement `CompanyForm` in `orgtorii/companies/forms.py` (fields: name, industry, description, hq_location)
+- [x] T012 [US1] Implement `CompanyCreateView` in `orgtorii/companies/views.py` with automatic slug generation
+- [x] T013 [US1] Create template `orgtorii/templates/companies/company_form.html`
+- [x] T014 [US1] Register `/companies/create/` in `orgtorii/companies/urls.py`
+- [x] T015 [US1] Implement tests for company creation in `orgtorii/companies/tests/test_views.py`
 
 ## Phase 4: User Story 4 - View Company Profile (P1)
 
 *Goal: Publicly display company information.*
 
-- [ ] T016 [US4] Implement `CompanyDetailView` in `orgtorii/companies/views.py`
-- [ ] T017 [US4] Create template `orgtorii/templates/companies/company_detail.html` (display all fields + websites)
-- [ ] T018 [US4] Implement `CompanyListView` with pagination and search in `orgtorii/companies/views.py`
-- [ ] T019 [US4] Create template `orgtorii/templates/companies/company_list.html`
-- [ ] T020 [US4] Register list and detail URLs in `orgtorii/companies/urls.py`
-- [ ] T021 [US4] Implement tests for list and detail views in `orgtorii/companies/tests/test_views.py`
+- [x] T016 [US4] Implement `CompanyDetailView` in `orgtorii/companies/views.py`
+- [x] T017 [US4] Create template `orgtorii/templates/companies/company_detail.html` (display all fields + websites)
+- [x] T018 [US4] Implement `CompanyListView` with pagination and search in `orgtorii/companies/views.py`
+- [x] T019 [US4] Create template `orgtorii/templates/companies/company_list.html`
+- [x] T020 [US4] Register list and detail URLs in `orgtorii/companies/urls.py`
+- [x] T021 [US4] Implement tests for list and detail views in `orgtorii/companies/tests/test_views.py`
 
 ## Phase 5: User Story 2 - Edit Company Details (P1)
 
 *Goal: Allow updates and revision tracking.*
 
-- [ ] T022 [US2] Update `CompanyForm` to support inline `CompanyWebsite` management (using formsets)
-- [ ] T023 [US2] Implement revision creation logic (signal or service) in `orgtorii/companies/services.py` that snapshots data on save
-- [ ] T024 [US2] Implement `CompanyUpdateView` in `orgtorii/companies/views.py`
-- [ ] T025 [US2] Register `/companies/<slug>/edit/` in `orgtorii/companies/urls.py`
-- [ ] T026 [US2] Update `company_detail.html` to link to edit view
-- [ ] T027 [US2] Implement tests for editing and revision snapshot creation in `orgtorii/companies/tests/test_views.py`
+- [x] T022 [US2] Update `CompanyForm` to support inline `CompanyWebsite` management (using formsets)
+- [x] T023 [US2] Implement revision creation logic (signal or service) in `orgtorii/companies/services.py` that snapshots data on save
+- [x] T024 [US2] Implement `CompanyUpdateView` in `orgtorii/companies/views.py`
+- [x] T025 [US2] Register `/companies/<slug>/edit/` in `orgtorii/companies/urls.py`
+- [x] T026 [US2] Update `company_detail.html` to link to edit view
+- [x] T027 [US2] Implement tests for editing and revision snapshot creation in `orgtorii/companies/tests/test_views.py`
 
 ## Phase 6: User Story 3 - View Revision History & Rollback (P2)
 
 *Goal: History visibility and restoration.*
 
-- [ ] T028 [US3] Implement `CompanyHistoryView` in `orgtorii/companies/views.py`
-- [ ] T029 [US3] Create template `orgtorii/templates/companies/company_history.html`
-- [ ] T030 [US3] Implement `CompanyRevertView` logic (apply snapshot to current instance) in `orgtorii/companies/views.py`
-- [ ] T031 [US3] Register history and revert URLs in `orgtorii/companies/urls.py`
-- [ ] T032 [US3] Implement tests for history view and revert functionality in `orgtorii/companies/tests/test_views.py`
+- [x] T028 [US3] Implement `CompanyHistoryView` in `orgtorii/companies/views.py`
+- [x] T029 [US3] Create template `orgtorii/templates/companies/company_history.html`
+- [x] T030 [US3] Implement `CompanyRevertView` logic (apply snapshot to current instance) in `orgtorii/companies/views.py`
+- [x] T031 [US3] Register history and revert URLs in `orgtorii/companies/urls.py`
+- [x] T032 [US3] Implement tests for history view and revert functionality in `orgtorii/companies/tests/test_views.py`
 
 ## Phase 7: User Story 5 - Manage Official Users (P2)
 
@@ -80,10 +80,10 @@
 
 *Goal: Final cleanup and UX improvements.*
 
-- [ ] T039 Polish templates with Tailwind CSS (ensure mobile responsiveness)
-- [ ] T040 Verify "Is Stub" logic visual indicators in templates
-- [ ] T041 Ensure SEO tags (title, meta description) are correct in `company_detail.html`
-- [ ] T042 Run full test suite `just test-unit orgtorii.companies`
+- [x] T039 Polish templates with Tailwind CSS (ensure mobile responsiveness)
+- [x] T040 Verify "Is Stub" logic visual indicators in templates
+- [x] T041 Ensure SEO tags (title, meta description) are correct in `company_detail.html`
+- [x] T042 Run full test suite `just test-unit orgtorii.companies`
 
 ## Dependencies
 

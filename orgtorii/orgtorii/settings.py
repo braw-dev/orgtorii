@@ -94,6 +94,7 @@ INSTALLED_APPS = [
     "orgtorii.flags",  # Feature flags
     "orgtorii.organizations",  # Organizations and RBAC
     "orgtorii.billing",  # Billing and subscriptions
+    "orgtorii.companies",  # Company directory
 ]
 
 MIDDLEWARE = [

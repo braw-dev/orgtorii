@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block head_title %}
+    {% translate "History" %} - {{ company.name }}
+{% endblock head_title %}
+{% block body %}
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <div class="mb-6">
+            <h1 class="text-4xl font-bold mb-2">{% translate "Revision History" %}</h1>
+            <p class="text-base-content/70">
+                <a href="{% url 'companies:detail' company.slug %}" class="link">{{ company.name }}</a>
+            </p>
+        </div>
+        {% if revisions %}
+            <div class="space-y-4">
+                {% for revision in revisions %}
+                    <div class="card bg-base-100 shadow-xl">
+                        <div class="card-body">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <h3 class="text-lg font-semibold">{{ revision.created_at|date:"M d, Y H:i" }}</h3>
+                                        {% if forloop.first %}
+                                            <div class="badge badge-primary">{% translate "Current" %}</div>
+                                        {% endif %}
+                                    </div>
+                                    {% if revision.editor %}
+                                        <p class="text-sm text-base-content/70">{% translate "Edited by" %} {{ revision.editor.email }}</p>
+                                    {% else %}
+                                        <p class="text-sm text-base-content/70">{% translate "Anonymous edit" %}</p>
+                                    {% endif %}
+                                    {% if revision.comment %}
+                                        <p class="text-sm text-base-content/80 mt-2">
+                                            <strong>{% translate "Comment:" %}</strong> {{ revision.comment }}
+                                        </p>
+                                    {% endif %}
+                                    <div class="collapse collapse-arrow bg-base-200 mt-3">
+                                        <input type="checkbox" />
+                                        <div class="collapse-title text-sm font-medium">{% translate "View snapshot details" %}</div>
+                                        <div class="collapse-content">
+                                            <dl class="text-sm space-y-2">
+                                                <div>
+                                                    <dt class="font-semibold">{% translate "Name" %}:</dt>
+                                                    <dd>
+                                                        {{ revision.snapshot.name }}
+                                                    </dd>
+                                                </div>
+                                                {% if revision.snapshot.industry %}
+                                                    <div>
+                                                        <dt class="font-semibold">{% translate "Industry" %}:</dt>
+                                                        <dd>
+                                                            {{ revision.snapshot.industry }}
+                                                        </dd>
+                                                    </div>
+                                                {% endif %}
+                                                {% if revision.snapshot.hq_location %}
+                                                    <div>
+                                                        <dt class="font-semibold">{% translate "HQ Location" %}:</dt>
+                                                        <dd>
+                                                            {{ revision.snapshot.hq_location }}
+                                                        </dd>
+                                                    </div>
+                                                {% endif %}
+                                                {% if revision.snapshot.description %}
+                                                    <div>
+                                                        <dt class="font-semibold">{% translate "Description" %}:</dt>
+                                                        <dd class="whitespace-pre-line">
+                                                            {{ revision.snapshot.description|truncatewords:30 }}
+                                                        </dd>
+                                                    </div>
+                                                {% endif %}
+                                                {% if revision.snapshot.websites %}
+                                                    <div>
+                                                        <dt class="font-semibold">{% translate "Websites" %}:</dt>
+                                                        <dd>
+                                                            <ul class="list-disc list-inside">
+                                                                {% for website in revision.snapshot.websites %}
+                                                                    <li>
+                                                                        {{ website.url }}
+                                                                        {% if website.label %}({{ website.label }}){% endif %}
+                                                                    </li>
+                                                                {% endfor %}
+                                                            </ul>
+                                                        </dd>
+                                                    </div>
+                                                {% endif %}
+                                            </dl>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% if not forloop.first and user.is_authenticated %}
+                                    <form method="post"
+                                          action="{% url 'companies:revert' company.slug revision.id %}">
+                                        {% csrf_token %}
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline"
+                                                onclick="return confirm('{% translate "Are you sure you want to restore this revision?" %}')">
+                                            {% translate "Restore" %}
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card bg-base-200">
+                <div class="card-body text-center">
+                    <p class="text-lg">{% translate "No revision history available yet." %}</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock body %}
