@@ -1,0 +1,46 @@
+---
+name: orgtorii-dev
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+    # needed for non-root playwright
+    # https://playwright.dev/docs/docker
+    ipc: host
+    security_opt:
+      - seccomp:./docker/seccomp_profile.json
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/workspace:cached
+    command: /bin/sh -c "while sleep 1000; do :; done"
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+    volumes:
+      - .:/workspace:cached
+    env_file:
+      - orgtorii/.env
+    command: watchfiles "celery -A orgtorii worker -l info"
+    depends_on:
+      - app
+      - cache
+      - postgres
+
+
+  postgres:
+    image: postgis/postgis:18-3.6
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: orgtorii
+      POSTGRES_USER: orgtorii
+      POSTGRES_PASSWORD: orgtorii
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:

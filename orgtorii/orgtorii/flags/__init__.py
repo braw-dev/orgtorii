@@ -1,0 +1,18 @@
+"""Feature flags app for managing binary feature toggles."""
+
+__all__ = ["is_flag_enabled", "get_client", "feature_flag"]
+
+
+def __getattr__(name: str):
+    """Lazy import to avoid circular imports during app initialization."""
+    if name == "is_flag_enabled":
+        from orgtorii.flags.services import is_flag_enabled
+        return is_flag_enabled
+    if name == "get_client":
+        from orgtorii.flags.services import get_client
+        return get_client
+    if name == "feature_flag":
+        from orgtorii.flags.decorators import feature_flag
+        return feature_flag
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+

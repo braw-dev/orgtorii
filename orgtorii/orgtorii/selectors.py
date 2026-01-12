@@ -1,0 +1,76 @@
+from orgtorii.users import models as user_models
+
+
+def user_has_permission(*, user: user_models.User, permission: str) -> bool:
+    """Check if a user has a specific permission.
+
+    Args:
+        user (user_models.User): an instance of the User model
+        permission (str): the permission to check for
+
+    Returns:
+        bool: whether the user has the permission
+    """
+    return user.has_perm(permission)
+
+
+def product_list() -> list[dict]:
+    """Return a list of products from Polar.sh.
+
+    Returns:
+        List of product dictionaries with name, price, features, etc.
+
+    Note:
+        This function fetches products from Polar.sh API.
+        Override this function to add project-specific formatting,
+        feature mapping, or fallback to hardcoded products.
+    """
+    from orgtorii.billing import services
+
+    try:
+        billing_service = services.get_billing_service()
+        products = billing_service.get_products(use_cache=True)
+
+        # Transform Polar products to template format
+        # Override this function to customize the format
+        return [
+            {
+                "id": product.get("id"),
+                "name": product.get("name", "Unknown"),
+                "price": _format_price(product),
+                "features": product.get("benefits", []),
+                "cta": "Get Started",
+                "popular": False,
+            }
+            for product in products
+        ]
+
+    except Exception:
+        # Fallback to empty list if Polar API unavailable
+        # Override this function to provide fallback products
+        return []
+
+
+def _format_price(product: dict) -> str:
+    """Format product price for display.
+
+    Args:
+        product: Product dictionary from Polar
+
+    Returns:
+        Formatted price string
+    """
+    # Override this function to customize price formatting
+    prices = product.get("prices", [])
+    if not prices:
+        return "Custom"
+
+    # Get first recurring price
+    for price in prices:
+        if price.get("type") == "recurring":
+            amount = price.get("amount", 0) / 100  # Convert cents to dollars
+            interval = price.get("recurring_interval", "month")
+            return f"${amount:.0f}/{interval}"
+
+    return "Custom"
+

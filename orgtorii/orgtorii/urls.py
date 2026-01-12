@@ -1,0 +1,41 @@
+from debug_toolbar.toolbar import debug_toolbar_urls
+from django.conf.urls.i18n import i18n_patterns
+from django.contrib import admin
+from django.urls import include, path
+
+from orgtorii.core import views as core_views
+from orgtorii.core.api import api_v1, webhooks_api
+
+from . import views
+
+newsletter_urls = [
+    path("signup/", core_views.newsletter_signup, name="signup"),
+    path("success/", core_views.newsletter_success, name="signup_success"),
+]
+
+urlpatterns = (
+    [
+        path("api/v1/", api_v1.urls),  # Django Ninja API
+        path("api/webhooks/", webhooks_api.urls),  # Webhook endpoints (CSRF exempt)
+        path("admin/", admin.site.urls),  # Django admin
+        path("accounts/", include("allauth.urls")),  # Django allauth
+        path("pricing/", views.pricing, name="pricing"),  # Pricing page
+        path("newsletter/", include((newsletter_urls, "newsletter"))),
+        path(
+            "",
+            include(
+                ([path("dashboard", view=views.dashboard, name="dashboard")], "account"),
+                namespace="account",
+            ),
+        ),
+    ]
+    + debug_toolbar_urls()
+    + [
+        path("", views.homepage, name="homepage"),
+    ]
+)
+
+urlpatterns += i18n_patterns(
+    # Pages app catch-all - must be last to avoid catching other URLs
+    path("", include("orgtorii.pages.urls")),
+)

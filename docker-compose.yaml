@@ -1,0 +1,51 @@
+---
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.prod
+    env_file:
+      - orgtorii/.env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - cache
+
+  web:
+    image: caddy:2
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+
+  cache:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:v1.35.1
+    ports:
+      - "6379:6379"
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.prod
+    command: celery -A orgtorii worker -l info
+    env_file:
+      - orgtorii/.env
+    depends_on:
+      - app
+      - cache
+      - postgres
+
+
+  postgres:
+    image: postgis/postgis:18-3.6
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    environment:
+      POSTGRES_DB: orgtorii
+      POSTGRES_USER: orgtorii
+      POSTGRES_PASSWORD: orgtorii
+    ports:
+      - "5432:5432"
+
+volumes:
+  caddy_data:
+  postgres_data:

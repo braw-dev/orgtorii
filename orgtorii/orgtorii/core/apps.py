@@ -1,0 +1,20 @@
+import logging
+from logging.handlers import QueueListener
+
+from django.apps import AppConfig
+from django.conf import settings
+
+
+class CoreConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "orgtorii.core"
+
+    def ready(self):
+        json_file_handler = logging.getHandlerByName("json_file")
+        if json_file_handler:
+            listener = QueueListener(
+                settings.LOGGING_QUEUE,
+                json_file_handler,
+                respect_handler_level=True,
+            )
+            listener.start()

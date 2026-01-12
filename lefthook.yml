@@ -1,0 +1,33 @@
+pre-commit:
+  parallel: true
+  commands:
+    ruff:
+      run: uv run ruff check --fix {staged_files}
+      stage_fixed: true
+      glob:
+        - "*.py"
+        - "*.py-tpl"
+      exclude:
+        - "**/migrations/*.py"
+    djlint-reformat:
+      run: uv run djlint --reformat --format-css {staged_files}
+      stage_fixed: true
+      glob:
+        - "*.html"
+        - "*.html-tpl"
+    djlint-django:
+      run: uv run djlint --lint {staged_files}
+      stage_fixed: true
+      glob:
+        - "*.html"
+        - "*.html-tpl"
+    markdownlint:
+      run: uv run rumdl check --fix --disable MD013 {staged_files}
+      stage_fixed: true
+      glob:
+        - "*.md"
+      exclude:
+        - "ai/**"
+        - ".specify/**"
+        - ".cursor/**"
+        - ".claude/**"

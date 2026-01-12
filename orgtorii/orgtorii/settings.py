@@ -1,0 +1,574 @@
+"""
+Django settings for orgtorii.
+
+For more information on this file, see
+https://docs.djangoproject.com/en/6.0/topics/settings/
+
+For the full list of settings and their values, see
+https://docs.djangoproject.com/en/6.0/ref/settings/
+"""
+
+import logging
+import queue
+import re
+import sys
+from datetime import timedelta
+from email.utils import getaddresses
+from pathlib import Path
+
+import environ
+import structlog
+from django.utils.translation import gettext_lazy as _
+
+env = environ.Env()
+
+# Used for public display e.g as default in <title> tags
+PROJECT_DISPLAY_NAME = "orgtorii"
+
+PROJECT_SLUG = "orgtorii"
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
+FRONTEND_DIR = BASE_DIR.parent / "frontend" / PROJECT_SLUG
+
+environ.Env.read_env(BASE_DIR / ".env")
+environ.Env.read_env(BASE_DIR / ".env.local")
+
+# Quick-start development settings - unsuitable for production
+# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = env.str("SECRET_KEY")
+
+DEBUG = env.bool("DEBUG", False)
+
+TESTING = "test" in sys.argv
+
+ENVIRONMENT = env.str("ENVIRONMENT", default="prod").lower()
+IS_PRODUCTION = ENVIRONMENT in ["production", "prod"]
+
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
+
+INTERNAL_IPS = [
+    "127.0.0.1",
+]
+
+SITE_ID = 1
+
+ADMINS = getaddresses([env("DJANGO_ADMINS")])
+
+# Application definition
+
+AUTH_USER_MODEL = "users.User"
+
+INSTALLED_APPS = [
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.sites",
+    "django.contrib.messages",
+    "whitenoise.runserver_nostatic",  # Whitenoise for static files in development
+    "django.contrib.staticfiles",
+    "axes",  # Login throttling
+    "django_vite",
+    "django_structlog",
+    "django_filters",  # Filtering based on user input
+    "django_extensions",  # Additional django extensions
+    "anymail",
+    "storages",
+    "hijack",
+    "hijack.contrib.admin",
+    "allauth",  # Authentication
+    "allauth.account",
+    "allauth.mfa",  # Multi-factor authentication extension
+    "meta",  # SEO metadata
+    "parler",  # Translatable model fields
+    "sri",  # Sub resource Integrity for JS
+    "django_cotton",  # Javascript style components
+    # Project apps
+    "orgtorii.users",
+    "orgtorii.brand",  # Brand colours and logo
+    "orgtorii.core",
+    "orgtorii.pages",  # Marketing landing pages
+    "orgtorii.flags",  # Feature flags
+    "orgtorii.organizations",  # Organizations and RBAC
+    "orgtorii.billing",  # Billing and subscriptions
+]
+
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "django_structlog.middlewares.RequestMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",  # Must be after SessionMiddleware
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "axes.middleware.AxesMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "hijack.middleware.HijackUserMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # allauth account middleware:
+    "allauth.account.middleware.AccountMiddleware",
+]
+
+if not TESTING:
+    # Don't add debug toolbar in testing mode
+    # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#disable-the-toolbar-when-running-tests-optional
+    INSTALLED_APPS = [
+        *INSTALLED_APPS,
+        "debug_toolbar",
+    ]
+    MIDDLEWARE = [
+        "debug_toolbar.middleware.DebugToolbarMiddleware",
+        *MIDDLEWARE,
+    ]
+
+ROOT_URLCONF = "orgtorii.urls"
+
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": ["templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION = "orgtorii.wsgi.application"
+
+LOG_LEVEL = env.str("LOG_LEVEL", default="INFO").upper()
+LOGGING_QUEUE = queue.SimpleQueue()
+LOG_FILE_PATH = BASE_DIR.parent / "logs" / "django.log"
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json_formatter": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.processors.JSONRenderer(),
+        },
+        "structlog_console": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.dev.ConsoleRenderer(),
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": LOG_LEVEL,
+            "class": "logging.StreamHandler",
+            "formatter": "structlog_console",
+        },
+        "json_file": {
+            "level": LOG_LEVEL,
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOG_FILE_PATH,
+            "maxBytes": 1024 * 1024 * 10,  # 10MB
+            "backupCount": 5,
+            "formatter": "json_formatter",
+        },
+        "file_queue": {
+            "level": LOG_LEVEL,
+            "class": "logging.handlers.QueueHandler",
+            "queue": LOGGING_QUEUE,
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        "django_structlog": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        "orgtorii": {
+            "handlers": ["console", "file_queue"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+    },
+    "root": {"handlers": ["console"], "level": LOG_LEVEL},
+}
+
+STRUCTLOG_SETTINGS = {
+    "contextvars": True,
+    "cache_logger_on_first_use": True,
+    "wrapper_class": structlog.make_filtering_bound_logger(
+        getattr(logging, LOG_LEVEL, logging.INFO)
+    ),
+    "processors": [
+        structlog.contextvars.merge_contextvars,
+        structlog.processors.add_log_level,
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.JSONRenderer(),
+    ],
+}
+
+# Database
+# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+
+DATABASES = {
+    "default": env.db_url("DB_DEFAULT_URL"),
+}
+
+# For databases, if using SQLITE, add the following options
+# https://gcollazo.com/optimal-sqlite-settings-for-django/
+SQLITE_OPTIONS = {
+    "init_command": (
+        "PRAGMA foreign_keys=ON;"
+        "PRAGMA journal_mode = WAL;"
+        "PRAGMA synchronous = NORMAL;"
+        "PRAGMA busy_timeout = 500;"  # 500ms
+        "PRAGMA temp_store = MEMORY;"
+        f"PRAGMA mmap_size = {128 * 1024 * 1024};"  # 128MB
+        f"PRAGMA journal_size_limit = {64 * 1024 * 1024};"  # 64MB
+        f"PRAGMA cache_size = -{8 * 1024 * 1024};"  # 8MB of 4096 bytes pages
+    ),
+    "transaction_mode": "IMMEDIATE",
+}
+
+# Cache
+# https://docs.djangoproject.com/en/6.0/topics/cache/#redis
+CACHES = {"default": env.cache(var="CACHE_DEFAULT_URL", default="locmemcache://")}
+
+# Email settings
+# https://docs.djangoproject.com/en/6.0/topics/email/
+if env.bool("SEND_EMAILS", default=False) and not TESTING:
+    EMAIL_BACKEND = "anymail.backends.scaleway.EmailBackend"
+    ANYMAIL = {
+        "SCW_PROJECT_ID": env.str("SCALEWAY_PROJECT_ID", default=""),
+        "SCW_ACCESS_KEY": env.str("SCALEWAY_ACCESS_KEY", default=""),
+        "SCW_SECRET_KEY": env.str("SCALEWAY_SECRET_KEY", default=""),
+        "SCW_REGION": env.str("SCALEWAY_REGION", default="fr-par"),
+        "SCW_DOMAIN_ID": env.str("SCALEWAY_DOMAIN_ID", default=""),
+    }
+else:
+    # Use console backend for development
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    ANYMAIL = {}
+
+DEFAULT_FROM_EMAIL = f"noreply@{env.str('EMAIL_DOMAIN')}"
+SERVER_EMAIL = f"django@{env.str('EMAIL_DOMAIN')}"
+
+# https://docs.djangoproject.com/en/dev/ref/settings/#email-timeout
+EMAIL_TIMEOUT = 5
+
+# Password validation
+# https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
+
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {
+            "min_length": 12,
+        },
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+    },
+]
+
+PASSWORD_HASHERS = [
+    "orgtorii.hashers.SecureArgon2PasswordHasher",
+    "django.contrib.auth.hashers.Argon2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher",
+    "django.contrib.auth.hashers.BCryptSHA256PasswordHasher",
+    "django.contrib.auth.hashers.ScryptPasswordHasher",
+]
+
+AUTHENTICATION_BACKENDS = (
+    "axes.backends.AxesBackend",
+    "django.contrib.auth.backends.ModelBackend",  # default
+    "rules.permissions.ObjectPermissionBackend",  # django-rules
+    # `allauth` specific authentication methods, such as login by email
+    "allauth.account.auth_backends.AuthenticationBackend",
+)
+
+HIJACK_PERMISSION_CHECK = "hijack.permissions.superusers_and_staff"
+HIJACK_ALLOW_GET_REQUESTS = True
+HIJACK_LOGOUT_REDIRECT_URL = "/admin/"
+
+LOGIN_REDIRECT_URL = "account:dashboard"
+LOGOUT_REDIRECT_URL = "/"
+
+# Allauth user account settings
+# https://docs.allauth.org/en/latest/account/configuration.html
+ACCOUNT_CHANGE_EMAIL = True
+ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 1
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
+ACCOUNT_LOGIN_BY_CODE_ENABLED = True
+ACCOUNT_LOGIN_BY_CODE_TIMEOUT = 60 * 15  # 15 minutes
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+ACCOUNT_LOGIN_ON_PASSWORD_RESET = True
+ACCOUNT_PRESERVE_USERNAME_CASING = False
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*"]
+ACCOUNT_USERNAME_BLACKLIST: list[str] = []
+ACCOUNT_USERNAME_MIN_LENGTH = 3
+
+# https://cookiecutter-django.readthedocs.io/en/latest/settings.html#other-environment-settings
+# Force the `admin` sign in process to go through the `django-allauth` workflow
+DJANGO_ADMIN_FORCE_ALLAUTH = True
+
+# django-axes configuration
+AXES_FAILURE_LIMIT = env.int("AXES_FAILURE_LIMIT", default=5)
+AXES_COOLOFF_TIME = timedelta(hours=1)
+AXES_LOCKOUT_TEMPLATE = "429.html"
+AXES_ENABLED = not TESTING
+AXES_RESET_ON_SUCCESS = True
+
+# Allauth MFA settings
+# https://docs.allauth.org/en/latest/mfa/webauthn.html
+
+# Make sure "webauthn" is included.
+MFA_SUPPORTED_TYPES = ["totp", "webauthn", "recovery_codes"]
+
+# Optional: enable support for logging in using a (WebAuthn) passkey.
+MFA_PASSKEY_LOGIN_ENABLED = True
+
+# Optional -- use for local development only: the WebAuthn uses the
+# ``fido2`` package, and versions up to including version 1.1.3 do not
+# regard localhost as a secure origin, which is problematic during
+# local development and testing.
+MFA_WEBAUTHN_ALLOW_INSECURE_ORIGIN = DEBUG
+
+MFA_TOTP_ISSUER = PROJECT_DISPLAY_NAME
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/6.0/howto/static-files/
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "OPTIONS": {
+            "location": BASE_DIR / "media",
+            "base_url": "/media/",
+        },
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+if IS_PRODUCTION:
+    AWS_STORAGE_BUCKET_NAME = env.str("AWS_STORAGE_BUCKET_NAME", default="")
+    AWS_S3_REGION_NAME = env.str("AWS_S3_REGION_NAME", default="")
+    AWS_S3_ENDPOINT_URL = env.str("AWS_S3_ENDPOINT_URL", default="")
+    AWS_S3_CUSTOM_DOMAIN = env.str("AWS_S3_CUSTOM_DOMAIN", default="")
+    STORAGES["default"] = {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+    }
+
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+    FRONTEND_DIR / "dist",
+]  # Add additional static file directories other than the app directories
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_HOST = env.str("DJANGO_STATIC_HOST", default="")
+if not STATIC_HOST:
+    STATIC_HOST = env.str("BUNNY_CDN_HOST", default="")
+STATIC_URL = f"{STATIC_HOST}/static/" if STATIC_HOST else "/static/"
+
+PLAUSIBLE_DOMAIN = env.str("PLAUSIBLE_DOMAIN", default="")
+PLAUSIBLE_SCRIPT_HOST = env.str("PLAUSIBLE_SCRIPT_HOST", default="https://plausible.io")
+PLAUSIBLE_API_HOST = env.str("PLAUSIBLE_API_HOST", default=PLAUSIBLE_SCRIPT_HOST)
+
+# Django meta settings
+# https://django-meta.readthedocs.io/en/latest/settings.html
+META_SITE_PROTOCOL = "https"
+if env.bool("USE_HTTP", default=False) or TESTING:
+    META_SITE_PROTOCOL = "http"
+META_SITE_TYPE = "website"
+META_SITE_NAME = PROJECT_DISPLAY_NAME
+META_USE_TITLE_TAG = False
+META_USE_OG_PROPERTIES = True
+META_USE_TWITTER_PROPERTIES = True
+META_USE_SITES = True
+
+# Django cotton
+# https://django-cotton.com/docs/configuration
+COTTON_DIR = "components"
+
+# Feature flags
+FLAGS_CACHE_TIMEOUT = env.int("FLAGS_CACHE_TIMEOUT", default=300)
+
+POLAR_ACCESS_TOKEN = env.str("POLAR_ACCESS_TOKEN", default="")
+POLAR_ORGANIZATION_ID = env.str("POLAR_ORGANIZATION_ID", default="")
+POLAR_WEBHOOK_SECRET = env.str("POLAR_WEBHOOK_SECRET", default="")
+POLAR_API_BASE_URL = env.str("POLAR_API_BASE_URL", default="https://api.polar.sh")
+
+# Chatwoot
+CHATWOOT_WEBSITE_TOKEN = env.str("CHATWOOT_WEBSITE_TOKEN", default="")
+CHATWOOT_BASE_URL = env.str("CHATWOOT_BASE_URL", default="https://app.chatwoot.com")
+
+# Django SRI settings
+
+# https://github.com/RealOrangeOne/django-sri
+SRI_ALGORITHM = "sha512"
+
+# Internationalization
+# https://docs.djangoproject.com/en/6.0/topics/i18n/
+
+LANGUAGE_CODE = "en-us"
+
+# Will be used by Gemini to know what to create
+# https://docs.djangoproject.com/en/6.0/ref/settings/#languages
+LANGUAGES = [
+    ("de", _("German")),
+    ("fr", _("French")),
+    ("es", _("Spanish")),
+    ("pt", _("Portuguese")),
+    ("en", _("English")),
+]
+
+# django-parler settings
+# https://django-parler.readthedocs.io/en/stable/configuration.html
+PARLER_LANGUAGES = {
+    None: (
+        {"code": "en"},
+        {"code": "de"},
+        {"code": "fr"},
+        {"code": "es"},
+        {"code": "pt"},
+    ),
+    "default": {
+        "fallbacks": ["en"],
+        "hide_untranslated": False,
+    },
+}
+
+# Where to put the translations
+LOCALE_PATHS = [
+    BASE_DIR / "locale",
+]
+
+TIME_ZONE = "UTC"
+
+USE_I18N = True
+
+USE_TZ = True
+
+# https://docs.djangoproject.com/en/6.0/ref/templates/builtins/#std-templatefilter-date  # noqa: E501
+DATE_FORMAT = "d E Y"
+SHORT_DATE_FORMAT = "Y/m/d"
+DATETIME_FORMAT = "d E Y H:i:s"
+SHORT_DATETIME_FORMAT = "Y/m/d H:i"
+
+USE_THOUSAND_SEPARATOR = True
+
+# https://docs.djangoproject.com/en/6.0/ref/settings/#std:setting-FORMS_URLFIELD_ASSUME_HTTPS  # noqa: E501
+# Silences some console warnings
+FORMS_URLFIELD_ASSUME_HTTPS = True
+
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/6.0/howto/static-files/
+
+# Default primary key field type
+# https://docs.djangoproject.com/en/6.0/ref/settings/#default-auto-field
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Vite
+DJANGO_VITE = {"default": {"dev_mode": DEBUG}}
+
+# Celery
+if USE_TZ:
+    CELERY_TIMEZONE = TIME_ZONE
+CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = "django-db"
+CELERY_CACHE_BACKEND = "default"
+
+
+# Whitenoise
+def immutable_file_test(path, url):
+    # Match vite (rollup)-generated hashes, à la, `some_file-CSliV9zW.js`
+    return re.match(r"^.+[.-][0-9a-zA-Z_-]{8,12}\..+$", url)
+
+
+WHITENOISE_IMMUTABLE_FILE_TEST = immutable_file_test
+
+# Production settings
+# HTTPS settings: https://docs.djangoproject.com/en/5.1/topics/security/#ssl-https
+# Recommendations from Mozilla: https://infosec.mozilla.org/guidelines/web_security.html
+if IS_PRODUCTION:
+    # Redirect all HTTP requests to HTTPS
+    # https://docs.djangoproject.com/en/5.1/ref/settings/#std-setting-SECURE_SSL_REDIRECT
+    SECURE_SSL_REDIRECT = True
+
+    # Serve secure cookies
+    # https://docs.djangoproject.com/en/5.1/ref/settings/#std-setting-SESSION_COOKIE_SECURE
+    SESSION_COOKIE_SECURE = True
+    # https://docs.djangoproject.com/en/5.1/ref/settings/#std-setting-CSRF_COOKIE_SECURE
+    CSRF_COOKIE_SECURE = True
+
+    # Read this header to determine if the request is secure
+    # https://docs.djangoproject.com/en/5.1/ref/settings/#std-setting-SECURE_PROXY_SSL_HEADER
+    # Caddy sets this server on the reverse proxy
+    # https://caddyserver.com/docs/caddyfile/directives/reverse_proxy#defaults
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+    # HSTS settings
+    # ----------------------------------------
+    # Enable for subdomains
+    # https://docs.djangoproject.com/en/5.1/ref/settings/#secure-hsts-include-subdomains
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    # https://docs.djangoproject.com/en/5.1/ref/settings/#secure-hsts-seconds
+    SECURE_HSTS_SECONDS = 60  # Start small, increase to 60 * 60 * 24 * 365 for 1 year
+    # Add the preload header to be submitted to the HSTS preload list
+    # https://docs.djangoproject.com/en/5.1/ref/settings/#secure-hsts-preload
+    SECURE_HSTS_PRELOAD = True
+# Custom testing settings to speed things up
+if TESTING:
+    # Disable logging during tests
+    import logging
+
+    logging.disable()
+
+    PASSWORD_HASHERS = ("django.contrib.auth.hashers.MD5PasswordHasher",)
+
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": ":memory:",
+        },
+    }
+
+structlog.configure(
+    processors=[
+        structlog.contextvars.merge_contextvars,
+        structlog.stdlib.filter_by_level,
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.PositionalArgumentsFormatter(),
+        structlog.processors.StackInfoRenderer(),
+        structlog.processors.format_exc_info,
+        structlog.processors.UnicodeDecoder(),
+        structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+    ],
+    logger_factory=structlog.stdlib.LoggerFactory(),
+    cache_logger_on_first_use=True,
+)
+
+for db in DATABASES.values():
+    if "sqlite3" in db["ENGINE"]:
+        options = SQLITE_OPTIONS.copy()
+        options.update(db.get("OPTIONS", {}))
+        db["OPTIONS"] = options
